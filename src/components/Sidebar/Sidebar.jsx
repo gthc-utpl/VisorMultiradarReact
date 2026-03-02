@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import useStore from '../../store/useStore'
 import { RADARS, BASE_LAYERS } from '../../config/radars'
 
-/* ── Switch inline ────────────────────────────────────── */
+/* ── Switch ──────────────────────────────────────────── */
 function Switch({ checked, onChange }) {
   return (
     <button
@@ -20,29 +20,29 @@ function Switch({ checked, onChange }) {
   )
 }
 
-/* ── Radar card with toggle ──────────────────────────── */
+/* ── Radar toggle row ────────────────────────────────── */
 function RadarToggle({ radar, checked, onChange }) {
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors
-      ${checked ? 'bg-white/5' : ''}`}>
+    <div className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
+      ${checked ? 'bg-white/5' : 'hover:bg-white/3'}`}>
       <span
         className="w-3 h-3 rounded-full shrink-0 border-2"
         style={{ backgroundColor: checked ? radar.colorHex : 'transparent', borderColor: radar.colorHex }}
       />
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-gray-100">{radar.name}</span>
-        <span className="text-xs text-gray-500 ml-1.5">{radar.location}</span>
+        <span className="text-[13px] font-medium text-gray-100">{radar.name}</span>
+        <span className="text-[11px] text-gray-500 ml-1.5">{radar.location}</span>
       </div>
       <Switch checked={checked} onChange={onChange} />
     </div>
   )
 }
 
-/* ── Simple toggle row ───────────────────────────────── */
+/* ── Toggle row ──────────────────────────────────────── */
 function ToggleRow({ label, checked, onChange }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-sm text-gray-300">{label}</span>
+    <div className="flex items-center justify-between px-3 py-1.5">
+      <span className="text-[13px] text-gray-300">{label}</span>
       <Switch checked={checked} onChange={onChange} />
     </div>
   )
@@ -54,12 +54,12 @@ function OpacitySlider() {
   const setRadarOpacity = useStore((s) => s.setRadarOpacity)
 
   return (
-    <div className="px-4 py-3">
-      <div className="flex items-center justify-between mb-2.5">
-        <label htmlFor="opacity-slider" className="text-sm text-gray-300">
+    <div className="px-3 py-1.5">
+      <div className="flex items-center justify-between mb-1.5">
+        <label htmlFor="opacity-slider" className="text-[13px] text-gray-300">
           Opacidad
         </label>
-        <span className="text-xs font-semibold text-white bg-white/10 px-2 py-0.5 rounded-md tabular-nums">
+        <span className="text-[11px] font-semibold text-white bg-white/10 px-1.5 py-0.5 rounded tabular-nums">
           {opacity}%
         </span>
       </div>
@@ -72,12 +72,12 @@ function OpacitySlider() {
           value={opacity}
           onChange={(e) => setRadarOpacity(parseInt(e.target.value))}
           className="w-full h-1.5 rounded-full appearance-none bg-gray-700 cursor-pointer
-            [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+            [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:shadow-md
             [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2
             [&::-webkit-slider-thumb]:border-blue-500
-            [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
+            [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white
             [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-blue-500
             [&::-moz-range-thumb]:cursor-pointer"
@@ -92,13 +92,13 @@ function OpacitySlider() {
   )
 }
 
-/* ── Base layer selector (horizontal pills) ──────────── */
+/* ── Base layer selector ─────────────────────────────── */
 function BaseLayerSelector() {
   const active = useStore((s) => s.activeBaseLayer)
   const setActive = useStore((s) => s.setActiveBaseLayer)
 
   return (
-    <div className="px-3 py-2">
+    <div className="px-3">
       <div className="inline-flex bg-white/5 rounded-lg p-0.5 border border-white/8 w-full">
         {Object.entries(BASE_LAYERS).map(([key, layer]) => (
           <button
@@ -106,7 +106,7 @@ function BaseLayerSelector() {
             type="button"
             onClick={() => setActive(key)}
             aria-pressed={active === key}
-            className={`flex-1 h-8 px-2 rounded-md text-[11px] font-semibold
+            className={`flex-1 h-7 px-2 rounded-md text-[11px] font-semibold
               transition-all duration-150 touch-manipulation
               focus:outline-none focus:ring-1 focus:ring-blue-400/60
               ${active === key
@@ -133,10 +133,10 @@ function RadarCard({ radar }) {
 
   return (
     <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/5">
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2 mb-1">
         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: radar.colorHex }} />
-        <span className="font-semibold text-[13px] text-white">{radar.name}</span>
-        <span className="text-[11px] text-gray-500">{radar.location}</span>
+        <span className="font-semibold text-[12px] text-white">{radar.name}</span>
+        <span className="text-[10px] text-gray-500">{radar.location}</span>
       </div>
       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11px]">
         {rows.map(([label, value]) => (
@@ -153,11 +153,9 @@ function RadarCard({ radar }) {
 /* ── Section label ───────────────────────────────────── */
 function SectionLabel({ children }) {
   return (
-    <div className="px-3 pt-4 pb-1.5">
-      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
-        {children}
-      </span>
-    </div>
+    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold px-3">
+      {children}
+    </span>
   )
 }
 
@@ -169,6 +167,8 @@ export default function Sidebar() {
   const setRadarVisibility = useStore((s) => s.setRadarVisibility)
   const showMarkers = useStore((s) => s.showMarkers)
   const setShowMarkers = useStore((s) => s.setShowMarkers)
+  const showCoverage = useStore((s) => s.showCoverage)
+  const setShowCoverage = useStore((s) => s.setShowCoverage)
   const closeRef = useRef(null)
 
   const handleClose = useCallback(() => setSidebarOpen(false), [setSidebarOpen])
@@ -202,7 +202,7 @@ export default function Sidebar() {
 
       {/* Panel */}
       <aside
-        className={`fixed top-0 right-0 h-full w-[300px] max-w-[85vw]
+        className={`fixed top-0 right-0 h-full w-[280px] max-w-[80vw]
           bg-gray-950 text-white z-[1002]
           transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
           border-l border-white/10
@@ -231,46 +231,59 @@ export default function Sidebar() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex-1 overflow-y-auto overscroll-contain py-3 space-y-3">
 
           {/* Radares */}
-          <SectionLabel>Radares</SectionLabel>
-          <div className="space-y-1 px-2">
-            {Object.entries(RADARS).map(([id, radar]) => (
-              <RadarToggle
-                key={id}
-                radar={radar}
-                checked={radarVisibility[id]}
-                onChange={(v) => setRadarVisibility(id, v)}
-              />
-            ))}
+          <div className="space-y-1">
+            <SectionLabel>Radares</SectionLabel>
+            <div className="space-y-0.5 px-1">
+              {Object.entries(RADARS).map(([id, radar]) => (
+                <RadarToggle
+                  key={id}
+                  radar={radar}
+                  checked={radarVisibility[id]}
+                  onChange={(v) => setRadarVisibility(id, v)}
+                />
+              ))}
+            </div>
           </div>
 
-          <div className="mx-4 my-2 border-t border-white/5" />
-
-          <ToggleRow
-            label="Mostrar marcadores"
-            checked={showMarkers}
-            onChange={setShowMarkers}
-          />
-          <OpacitySlider />
+          {/* Visualización */}
+          <div className="space-y-1">
+            <SectionLabel>Visualización</SectionLabel>
+            <ToggleRow
+              label="Marcadores"
+              checked={showMarkers}
+              onChange={setShowMarkers}
+            />
+            <ToggleRow
+              label="Relleno cobertura"
+              checked={showCoverage}
+              onChange={setShowCoverage}
+            />
+            <OpacitySlider />
+          </div>
 
           {/* Separator */}
-          <div className="mx-3 my-1 border-t border-white/5" />
+          <div className="mx-3 border-t border-white/6" />
 
           {/* Mapa base */}
-          <SectionLabel>Mapa base</SectionLabel>
-          <BaseLayerSelector />
+          <div className="space-y-1.5">
+            <SectionLabel>Mapa base</SectionLabel>
+            <BaseLayerSelector />
+          </div>
 
           {/* Separator */}
-          <div className="mx-3 my-1 border-t border-white/5" />
+          <div className="mx-3 border-t border-white/6" />
 
           {/* Info técnica */}
-          <SectionLabel>Información técnica</SectionLabel>
-          <div className="px-3 pb-3 space-y-2">
-            {Object.entries(RADARS).map(([id, radar]) => (
-              <RadarCard key={id} radar={radar} />
-            ))}
+          <div className="space-y-1.5">
+            <SectionLabel>Información técnica</SectionLabel>
+            <div className="px-3 space-y-2">
+              {Object.entries(RADARS).map(([id, radar]) => (
+                <RadarCard key={id} radar={radar} />
+              ))}
+            </div>
           </div>
         </div>
 

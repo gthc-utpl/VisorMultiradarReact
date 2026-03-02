@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import useStore from '../../store/useStore'
 import { useAnimation } from '../../hooks/useAnimation'
 import { useCurrentFrame } from '../../hooks/useCurrentFrame'
@@ -7,7 +7,7 @@ import { ANIMATION_CONFIG } from '../../config/radars'
 import { formatTimestamp, toDatetimeLocalString } from '../../utils/julianDate'
 import Timeline from './Timeline'
 
-/* ── Tiny icon button ────────────────────────────────── */
+/* ── Icon button ─────────────────────────────────────── */
 function Btn({ onClick, icon, label, disabled = false, primary = false }) {
   return (
     <button
@@ -68,9 +68,9 @@ export default function AnimationBar() {
   const setSpeed = useStore((s) => s.setSpeed)
   const frameData = useCurrentFrame()
 
-  const [showDatePanel, setShowDatePanel] = useState(false)
   const [customDate, setCustomDate] = useState('')
   const [dateStatus, setDateStatus] = useState(null)
+  const [mobileExpanded, setMobileExpanded] = useState(false)
   const barRef = useRef(null)
   const endDateRef = useRef(null)
 
@@ -113,6 +113,9 @@ export default function AnimationBar() {
   useEffect(() => {
     if (!animationActive) return
     const h = (e) => {
+      if (e.key === 'Enter' && e.target.id === 'custom-date-input') {
+        e.preventDefault(); handleApplyCustomDate(); return
+      }
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       switch (e.key) {
         case ' ': e.preventDefault(); togglePlay(); break
@@ -128,7 +131,7 @@ export default function AnimationBar() {
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [animationActive, togglePlay, nextFrame, prevFrame, goToFirst, goToLast])
+  }, [animationActive, togglePlay, nextFrame, prevFrame, goToFirst, goToLast, handleApplyCustomDate])
 
   // Notify FABs/Legend of height changes
   useEffect(() => {
@@ -153,7 +156,7 @@ export default function AnimationBar() {
     : '--:-- LT'
 
   const noData = totalFrames === 0
-  const disabled = isLoading || noData
+  const ctrl = isLoading || noData
 
   return (
     <div
@@ -188,74 +191,98 @@ export default function AnimationBar() {
       {/* Timeline */}
       <Timeline />
 
-      {/* ── Main controls row ── */}
-      <div className="px-3 pb-2 pt-0.5">
+      {/* ════════ DESKTOP ════════ */}
+      <div className="hidden sm:flex items-center gap-2 px-3 pb-3 pt-2">
+        {/* Zone 1 — Status */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="font-semibold text-sm tabular-nums tracking-wide">{currentTime}</span>
+          {!noData && !isLoading && (
+            <span className="text-[10px] text-gray-500 tabular-nums">
+              {currentFrameIndex + 1}/{totalFrames}
+            </span>
+          )}
+        </div>
 
-        {/* Desktop: single row */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Time display */}
-          <div className="flex items-center gap-1.5 min-w-[110px]">
-            <span className="font-semibold text-sm tabular-nums tracking-wide">{currentTime}</span>
-            {!noData && !isLoading && (
-              <span className="text-[10px] text-gray-500 tabular-nums">
-                {currentFrameIndex + 1}/{totalFrames}
-              </span>
-            )}
+        <div className="w-px h-6 bg-white/8" />
+
+        {/* Zone 2 — Playback + Speed */}
+        <div className="flex-1 flex items-center justify-center gap-2">
+          <div className="flex items-center gap-0.5">
+            <Btn onClick={goToFirst} icon="fa-backward-fast" label="Primer frame" disabled={ctrl} />
+            <Btn onClick={prevFrame} icon="fa-backward-step" label="Anterior" disabled={ctrl} />
+            <Btn onClick={togglePlay} icon={isPlaying ? 'fa-pause' : 'fa-play'} label={isPlaying ? 'Pausar' : 'Reproducir'} disabled={ctrl} primary />
+            <Btn onClick={nextFrame} icon="fa-forward-step" label="Siguiente" disabled={ctrl} />
+            <Btn onClick={goToLast} icon="fa-forward-fast" label="Último frame" disabled={ctrl} />
           </div>
-
-          {/* Period pills */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold">Per</span>
-            <Pills options={ANIMATION_CONFIG.periods} value={period} onChange={setPeriod} disabled={isLoading} />
-          </div>
-
-          {/* Playback controls — centered */}
-          <div className="flex-1 flex items-center justify-center gap-0.5">
-            <Btn onClick={goToFirst} icon="fa-backward-fast" label="Primer frame" disabled={disabled} />
-            <Btn onClick={prevFrame} icon="fa-backward-step" label="Anterior" disabled={disabled} />
-            <Btn onClick={togglePlay} icon={isPlaying ? 'fa-pause' : 'fa-play'} label={isPlaying ? 'Pausar' : 'Reproducir'} disabled={disabled} primary />
-            <Btn onClick={nextFrame} icon="fa-forward-step" label="Siguiente" disabled={disabled} />
-            <Btn onClick={goToLast} icon="fa-forward-fast" label="Último frame" disabled={disabled} />
-          </div>
-
-          {/* Speed pills */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold">Vel</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] text-gray-500 uppercase font-semibold">Velocidad</span>
             <Pills options={ANIMATION_CONFIG.speeds} value={speed} onChange={setSpeed} />
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 ml-1">
-            <button
-              onClick={() => setShowDatePanel((v) => !v)}
-              title="Consultar otra fecha"
-              aria-expanded={showDatePanel}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors
-                focus:outline-none focus:ring-2 focus:ring-blue-400/60
-                ${showDatePanel
-                  ? 'bg-blue-500/20 text-blue-300'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/10'
-                }`}
-            >
-              <i className="fas fa-calendar-alt text-xs" />
-            </button>
-            <button
-              onClick={() => loadData()}
-              disabled={isLoading}
-              title="Actualizar datos"
-              className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500
-                hover:text-gray-300 hover:bg-white/10 disabled:opacity-40 transition-colors
-                focus:outline-none focus:ring-2 focus:ring-blue-400/60"
-            >
-              <i className={`fas fa-sync-alt text-xs ${isLoading ? 'fa-spin' : ''}`} />
-            </button>
           </div>
         </div>
 
-        {/* Mobile: compact stacked */}
-        <div className="sm:hidden space-y-1.5">
-          {/* Time + frame count */}
-          <div className="flex items-center justify-center gap-2">
+        <div className="w-px h-6 bg-white/8" />
+
+        {/* Zone 3 — Data config */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-500 uppercase font-semibold">Intervalo</span>
+            <Pills options={ANIMATION_CONFIG.periods} value={period} onChange={setPeriod} disabled={isLoading} />
+          </div>
+          <div className="w-px h-5 bg-white/6" />
+          <span className="text-[10px] text-gray-500 uppercase font-semibold">Fecha</span>
+          <input
+            id="custom-date-input"
+            type="datetime-local"
+            value={customDate || toDatetimeLocalString(new Date())}
+            onChange={(e) => { setCustomDate(e.target.value); setDateStatus(null) }}
+            max={toDatetimeLocalString(new Date())}
+            title={`Fecha final — se cargarán ${period}h previas`}
+            className="bg-gray-900/60 text-white text-xs px-2 h-7 w-44
+              rounded-md border border-white/12
+              focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30
+              [color-scheme:dark]"
+          />
+          <button
+            onClick={handleApplyCustomDate}
+            disabled={isLoading}
+            title={`Cargar ${period}h previas a la fecha seleccionada`}
+            className="h-7 px-2.5 bg-blue-500 hover:bg-blue-600 active:bg-blue-700
+              text-white text-[11px] font-semibold rounded-md transition-colors
+              disabled:opacity-50 touch-manipulation
+              focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            Cargar
+          </button>
+          <button
+            onClick={() => loadData()}
+            disabled={isLoading}
+            title="Actualizar datos"
+            className="flex items-center justify-center w-7 h-7 rounded-full text-gray-500
+              hover:text-gray-300 hover:bg-white/10 disabled:opacity-40 transition-colors
+              focus:outline-none focus:ring-2 focus:ring-blue-400/60"
+          >
+            <i className={`fas fa-sync-alt text-[11px] ${isLoading ? 'fa-spin' : ''}`} />
+          </button>
+        </div>
+
+        {dateStatus && (
+          <span className={`text-[11px] flex items-center gap-1 shrink-0
+            ${dateStatus.type === 'error' ? 'text-red-400' : 'text-amber-400'}
+          `}>
+            <i className={`fas text-[9px]
+              ${dateStatus.type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'}
+            `} />
+            {dateStatus.msg}
+          </span>
+        )}
+      </div>
+
+      {/* ════════ MOBILE ════════ */}
+      <div className="sm:hidden px-3 pb-2 pt-0.5">
+        {/* Always visible: Time + Playback */}
+        <div className="flex items-center justify-between">
+          {/* Time */}
+          <div className="flex items-center gap-1.5">
             <span className="font-semibold text-sm tabular-nums">{currentTime}</span>
             {!noData && !isLoading && (
               <span className="text-[10px] text-gray-500 tabular-nums">
@@ -264,87 +291,82 @@ export default function AnimationBar() {
             )}
           </div>
 
-          {/* Playback + action buttons */}
-          <div className="flex items-center justify-center gap-0.5">
-            <Btn onClick={goToFirst} icon="fa-backward-fast" label="Primer frame" disabled={disabled} />
-            <Btn onClick={prevFrame} icon="fa-backward-step" label="Anterior" disabled={disabled} />
-            <Btn onClick={togglePlay} icon={isPlaying ? 'fa-pause' : 'fa-play'} label={isPlaying ? 'Pausar' : 'Reproducir'} disabled={disabled} primary />
-            <Btn onClick={nextFrame} icon="fa-forward-step" label="Siguiente" disabled={disabled} />
-            <Btn onClick={goToLast} icon="fa-forward-fast" label="Último frame" disabled={disabled} />
-            <div className="w-px h-5 bg-white/10 mx-1" />
-            <button
-              onClick={() => setShowDatePanel((v) => !v)}
-              aria-expanded={showDatePanel}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors
-                ${showDatePanel ? 'bg-blue-500/20 text-blue-300' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              <i className="fas fa-calendar-alt text-xs" />
-            </button>
-            <button
-              onClick={() => loadData()}
-              disabled={isLoading}
-              className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500
-                hover:text-gray-300 disabled:opacity-40 transition-colors"
-            >
-              <i className={`fas fa-sync-alt text-xs ${isLoading ? 'fa-spin' : ''}`} />
-            </button>
-          </div>
-
-          {/* Period + Speed in one row */}
-          <div className="flex items-center justify-center gap-3">
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] text-gray-500 uppercase font-semibold">Per</span>
-              <Pills options={ANIMATION_CONFIG.periods} value={period} onChange={setPeriod} disabled={isLoading} />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] text-gray-500 uppercase font-semibold">Vel</span>
-              <Pills options={ANIMATION_CONFIG.speeds} value={speed} onChange={setSpeed} />
-            </div>
+          {/* Playback */}
+          <div className="flex items-center gap-0.5">
+            <Btn onClick={goToFirst} icon="fa-backward-fast" label="Primer frame" disabled={ctrl} />
+            <Btn onClick={prevFrame} icon="fa-backward-step" label="Anterior" disabled={ctrl} />
+            <Btn onClick={togglePlay} icon={isPlaying ? 'fa-pause' : 'fa-play'} label={isPlaying ? 'Pausar' : 'Reproducir'} disabled={ctrl} primary />
+            <Btn onClick={nextFrame} icon="fa-forward-step" label="Siguiente" disabled={ctrl} />
+            <Btn onClick={goToLast} icon="fa-forward-fast" label="Último frame" disabled={ctrl} />
           </div>
         </div>
 
-        {/* ── Custom date panel (expandable) ── */}
-        {showDatePanel && (
-          <div className="mt-2 bg-gray-800/50 rounded-lg border border-white/8 p-2.5
-            animate-[slideDown_0.15s_ease-out]">
-            <div className="flex items-end gap-2">
-              <div className="flex-1 min-w-0">
-                <label
-                  htmlFor="custom-date-input"
-                  className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-semibold"
-                >
-                  Fecha final — se cargarán {period}h previas
-                </label>
-                <input
-                  id="custom-date-input"
-                  type="datetime-local"
-                  value={customDate || toDatetimeLocalString(new Date())}
-                  onChange={(e) => { setCustomDate(e.target.value); setDateStatus(null) }}
-                  max={toDatetimeLocalString(new Date())}
-                  className="w-full bg-gray-900/60 text-white text-xs px-2.5 h-8
-                    rounded-md border border-white/15
-                    focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30
-                    [color-scheme:dark]"
-                />
+        {/* Accordion toggle */}
+        <button
+          onClick={() => setMobileExpanded((v) => !v)}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 mt-1
+            text-[10px] text-gray-500 hover:text-gray-300 transition-colors touch-manipulation"
+        >
+          <span className="uppercase font-semibold tracking-wider">
+            {mobileExpanded ? 'Menos opciones' : 'Más opciones'}
+          </span>
+          <i className={`fas fa-chevron-down text-[8px] transition-transform duration-200
+            ${mobileExpanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Expandable options */}
+        {mobileExpanded && (
+          <div className="space-y-2 pt-0.5 pb-0.5 animate-[slideDown_0.15s_ease-out]">
+            {/* Period + Speed + Refresh */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-gray-500 uppercase font-semibold">Intervalo</span>
+                  <Pills options={ANIMATION_CONFIG.periods} value={period} onChange={setPeriod} disabled={isLoading} />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-gray-500 uppercase font-semibold">Velocidad</span>
+                  <Pills options={ANIMATION_CONFIG.speeds} value={speed} onChange={setSpeed} />
+                </div>
               </div>
+              <button
+                onClick={() => loadData()}
+                disabled={isLoading}
+                className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500
+                  hover:text-gray-300 disabled:opacity-40 transition-colors"
+              >
+                <i className={`fas fa-sync-alt text-xs ${isLoading ? 'fa-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Date input */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] text-gray-500 uppercase font-semibold shrink-0">Fecha</span>
+              <input
+                type="datetime-local"
+                value={customDate || toDatetimeLocalString(new Date())}
+                onChange={(e) => { setCustomDate(e.target.value); setDateStatus(null) }}
+                max={toDatetimeLocalString(new Date())}
+                className="flex-1 min-w-0 bg-gray-900/60 text-white text-xs px-2 h-7
+                  rounded-md border border-white/12
+                  focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30
+                  [color-scheme:dark]"
+              />
               <button
                 onClick={handleApplyCustomDate}
                 disabled={isLoading}
-                className="h-8 px-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700
-                  text-white text-xs font-semibold rounded-md transition-colors shrink-0
-                  disabled:opacity-50 touch-manipulation
-                  focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="h-7 px-2.5 bg-blue-500 hover:bg-blue-600 active:bg-blue-700
+                  text-white text-[11px] font-semibold rounded-md transition-colors shrink-0
+                  disabled:opacity-50 touch-manipulation"
               >
                 Cargar
               </button>
             </div>
-
             {dateStatus && (
-              <div className={`mt-2 flex items-center gap-1.5 text-[11px] px-2 py-1.5 rounded-md
-                ${dateStatus.type === 'error' ? 'bg-red-500/10 text-red-300 border border-red-500/20' : ''}
-                ${dateStatus.type === 'warning' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' : ''}
+              <div className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md
+                ${dateStatus.type === 'error' ? 'bg-red-500/10 text-red-300' : 'bg-amber-500/10 text-amber-300'}
               `}>
-                <i className={`fas text-[10px] shrink-0
+                <i className={`fas text-[9px] shrink-0
                   ${dateStatus.type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'}
                 `} />
                 <span>{dateStatus.msg}</span>

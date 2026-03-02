@@ -105,16 +105,20 @@ export default function MapView({ mapRef }) {
   const radarVisibility = useStore((s) => s.radarVisibility)
   const radarOpacity = useStore((s) => s.radarOpacity)
   const showMarkers = useStore((s) => s.showMarkers)
+  const showCoverage = useStore((s) => s.showCoverage)
   const latestRecords = useStore((s) => s.latestRecords)
   const animationActive = useStore((s) => s.animationActive)
   const frameData = useCurrentFrame()
 
   const radarEntries = useMemo(() => Object.entries(RADARS), [])
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+  const initialZoom = isMobile ? MAP_CONFIG.defaultZoom - 1 : MAP_CONFIG.defaultZoom
+
   return (
     <MapContainer
       center={MAP_CONFIG.center}
-      zoom={MAP_CONFIG.defaultZoom}
+      zoom={initialZoom}
       minZoom={MAP_CONFIG.minZoom}
       maxZoom={MAP_CONFIG.maxZoom}
       className="w-full h-full z-0"
@@ -131,11 +135,26 @@ export default function MapView({ mapRef }) {
           pathOptions={{
             color: radar.colorHex,
             fillColor: radar.colorHex,
-            fillOpacity: 0.03,
+            fillOpacity: showCoverage ? 0.03 : 0,
             weight: 1,
             dashArray: '5, 10',
           }}
-        />
+        >
+          <Popup>
+            <div className="text-sm">
+              <strong style={{ color: radar.colorHex }}>{radar.name}</strong>
+              <span className="text-gray-500"> — {radar.location}</span>
+              <br />
+              Cobertura: {radar.coverageKm} km
+              <br />
+              Resolución: {radar.resolution}
+              <br />
+              Actualización: {radar.frequency}
+              <br />
+              Coords: {radar.lat.toFixed(4)}°, {radar.lon.toFixed(4)}°
+            </div>
+          </Popup>
+        </Circle>
       ))}
 
       {showMarkers &&

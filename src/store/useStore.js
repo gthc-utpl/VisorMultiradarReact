@@ -4,8 +4,9 @@ import { ANIMATION_CONFIG } from '../config/radars'
 const useStore = create((set, get) => ({
   // Radar state
   radarVisibility: { guaxx: true, loxx: true },
-  radarOpacity: 70,
+  radarOpacity: 100,
   showMarkers: false,
+  showCoverage: false,
   latestRecords: { guaxx: null, loxx: null },
   activeBaseLayer: 'osm',
 
@@ -42,6 +43,7 @@ const useStore = create((set, get) => ({
 
   setRadarOpacity: (opacity) => set({ radarOpacity: opacity }),
   setShowMarkers: (show) => set({ showMarkers: show }),
+  setShowCoverage: (show) => set({ showCoverage: show }),
   setLatestRecord: (radarId, record) =>
     set((s) => ({
       latestRecords: { ...s.latestRecords, [radarId]: record },
