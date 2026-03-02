@@ -1,0 +1,44 @@
+name: Visor Deployment Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Instalar y Construir
+        shell: cmd
+        run: |
+          echo === Preparando entorno de construcción ===
+          call npm install
+          call npm run build
+
+      - name: Despliegue a Producción (C:\apps)
+        shell: cmd
+        run: |
+          echo === Sincronizando con carpeta de Nginx ===
+          
+          :: Aseguramos que la carpeta de destino exista
+          if not exist "C:\apps\VisorMultiradarReact\dist" mkdir "C:\apps\VisorMultiradarReact\dist"
+          
+          :: Limpieza preventiva de archivos viejos
+          del /q /s "C:\apps\VisorMultiradarReact\dist\*"
+          
+          :: Copia de seguridad: Del Workspace a la ruta fija
+          xcopy /E /Y "dist\*" "C:\apps\VisorMultiradarReact\dist\"
+          
+          echo === Despliegue completado con éxito ===
+
+      - name: Refrescar Servidor Web
+        shell: cmd
+        run: |
+          cd C:\nginx
+          nginx -s reload
