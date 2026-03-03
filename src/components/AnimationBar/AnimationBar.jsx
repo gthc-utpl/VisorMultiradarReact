@@ -106,6 +106,13 @@ export default function AnimationBar() {
     return () => clearInterval(id)
   }, [animationActive, isLiveMode, period, refreshAnimationFrames])
 
+  const handleGoLive = useCallback(() => {
+    setCustomDate('')
+    setDateStatus(null)
+    endDateRef.current = null
+    loadData(new Date())
+  }, [loadData])
+
   const handleApplyCustomDate = useCallback(() => {
     if (!customDate) {
       setDateStatus({ type: 'error', msg: 'Seleccione una fecha y hora.' })
@@ -244,6 +251,22 @@ export default function AnimationBar() {
             <Pills options={ANIMATION_CONFIG.periods} value={period} onChange={setPeriod} disabled={isLoading} />
           </div>
           <div className="w-px h-5 bg-white/6" />
+          <button
+            onClick={isLiveMode ? undefined : handleGoLive}
+            disabled={isLoading}
+            title={isLiveMode ? 'Modo en vivo — auto-actualización activa' : 'Volver a tiempo real'}
+            className={`h-7 px-2 rounded-md text-[11px] font-semibold flex items-center gap-1.5
+              transition-colors disabled:opacity-50 touch-manipulation shrink-0
+              focus:outline-none focus:ring-2 focus:ring-blue-400/60
+              ${isLiveMode
+                ? 'bg-green-500/15 text-green-400 border border-green-500/30 cursor-default'
+                : 'bg-gray-800 text-gray-400 border border-white/10 hover:text-white hover:bg-gray-700 cursor-pointer'
+              }`}
+          >
+            <span className={`inline-block w-1.5 h-1.5 rounded-full
+              ${isLiveMode ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+            En vivo
+          </button>
           <span className="text-[10px] text-gray-500 uppercase font-semibold">Fecha</span>
           <input
             id="custom-date-input"
@@ -354,8 +377,23 @@ export default function AnimationBar() {
               </button>
             </div>
 
-            {/* Date input */}
+            {/* Date input + Live button */}
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={isLiveMode ? undefined : handleGoLive}
+                disabled={isLoading}
+                title={isLiveMode ? 'Modo en vivo' : 'Volver a tiempo real'}
+                className={`h-7 px-2 rounded-md text-[10px] font-semibold flex items-center gap-1 shrink-0
+                  transition-colors disabled:opacity-50 touch-manipulation
+                  ${isLiveMode
+                    ? 'bg-green-500/15 text-green-400 border border-green-500/30 cursor-default'
+                    : 'bg-gray-800 text-gray-400 border border-white/10 hover:text-white hover:bg-gray-700 cursor-pointer'
+                  }`}
+              >
+                <span className={`inline-block w-1.5 h-1.5 rounded-full
+                  ${isLiveMode ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+                En vivo
+              </button>
               <span className="text-[9px] text-gray-500 uppercase font-semibold shrink-0">Fecha</span>
               <input
                 type="datetime-local"
