@@ -66,9 +66,10 @@ export default function AnimationBar() {
   const setPeriod = useStore((s) => s.setPeriod)
   const speed = useStore((s) => s.speed)
   const setSpeed = useStore((s) => s.setSpeed)
+  const customDate = useStore((s) => s.customDate)
+  const setCustomDate = useStore((s) => s.setCustomDate)
   const frameData = useCurrentFrame()
 
-  const [customDate, setCustomDate] = useState('')
   const [dateStatus, setDateStatus] = useState(null)
   const [mobileExpanded, setMobileExpanded] = useState(false)
   const barRef = useRef(null)
@@ -92,7 +93,7 @@ export default function AnimationBar() {
   }, [animationActive, period])
 
   // Auto-refresh frames during live-mode animation
-  const isLiveMode = customDate === ''
+  const isLiveMode = !customDate
   useEffect(() => {
     if (!animationActive || !isLiveMode) return
 
@@ -107,14 +108,14 @@ export default function AnimationBar() {
   }, [animationActive, isLiveMode, period, refreshAnimationFrames])
 
   const handleGoLive = useCallback(() => {
-    setCustomDate('')
+    setCustomDate(null)
     setDateStatus(null)
     endDateRef.current = null
     loadData(new Date())
   }, [loadData])
 
   const handleApplyCustomDate = useCallback(() => {
-    if (!customDate) {
+    if (!customDate || !customDate.trim()) {
       setDateStatus({ type: 'error', msg: 'Seleccione una fecha y hora.' })
       return
     }
@@ -291,16 +292,6 @@ export default function AnimationBar() {
           >
             Cargar
           </button>
-          <button
-            onClick={() => loadData()}
-            disabled={isLoading}
-            title="Actualizar datos"
-            className="flex items-center justify-center w-7 h-7 rounded-full text-gray-500
-              hover:text-gray-300 hover:bg-white/10 disabled:opacity-40 transition-colors
-              focus:outline-none focus:ring-2 focus:ring-blue-400/60"
-          >
-            <i className={`fas fa-sync-alt text-[11px] ${isLoading ? 'fa-spin' : ''}`} />
-          </button>
         </div>
 
         {dateStatus && (
@@ -367,14 +358,6 @@ export default function AnimationBar() {
                   <Pills options={ANIMATION_CONFIG.speeds} value={speed} onChange={setSpeed} />
                 </div>
               </div>
-              <button
-                onClick={() => loadData()}
-                disabled={isLoading}
-                className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500
-                  hover:text-gray-300 disabled:opacity-40 transition-colors"
-              >
-                <i className={`fas fa-sync-alt text-xs ${isLoading ? 'fa-spin' : ''}`} />
-              </button>
             </div>
 
             {/* Date input + Live button */}

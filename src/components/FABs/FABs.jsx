@@ -27,12 +27,14 @@ export default function FABs({ mapRef }) {
   const animationActive = useStore((s) => s.animationActive)
   const setAnimationActive = useStore((s) => s.setAnimationActive)
   const setIsPlaying = useStore((s) => s.setIsPlaying)
+  const customDate = useStore((s) => s.customDate)
+  const period = useStore((s) => s.period)
   const toggleSidebar = useStore((s) => s.toggleSidebar)
   const userLocation = useStore((s) => s.userLocation)
   const addToast = useStore((s) => s.addToast)
 
   const { startWatching } = useGeolocation()
-  const { loadLatest } = useRadarData()
+  const { loadLatest, loadAnimationData, refreshAnimationFrames } = useRadarData()
 
   const [barHeight, setBarHeight] = useState(0)
 
@@ -48,9 +50,17 @@ export default function FABs({ mapRef }) {
   }, [animationActive, setAnimationActive, setIsPlaying])
 
   const handleRefresh = useCallback(() => {
-    loadLatest()
-    addToast('Datos actualizados', 'success')
-  }, [loadLatest, addToast])
+    if (!animationActive) {
+      loadLatest()
+      addToast('Datos actualizados', 'success')
+    } else if (!customDate) {
+      // Live mode — incremental refresh with current time
+      refreshAnimationFrames(period)
+    } else {
+      // Custom date mode — reload same period
+      loadAnimationData(new Date(customDate), period)
+    }
+  }, [animationActive, customDate, period, loadLatest, loadAnimationData, refreshAnimationFrames, addToast])
 
   const handleLocation = useCallback(() => {
     startWatching()
