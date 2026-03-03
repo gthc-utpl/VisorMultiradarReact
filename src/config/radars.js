@@ -56,6 +56,7 @@ export const ANIMATION_CONFIG = {
   frameTolerance: 10, // minutes
   maxCacheSize: 100,
   baseInterval: 1000, // ms at 1x speed
+  autoRefreshInterval: 3 * 60 * 1000, // ms — auto-refresh during live animation
 }
 
 export const DBZ_LEGEND = [

@@ -6,7 +6,7 @@ import {
   fetchRecordsForPeriod,
   getAllImageUrls,
 } from '../services/radarService'
-import { startPreload, abortPendingLoads } from '../services/imageCache'
+import { startPreload, abortPendingLoads, preloadBatch } from '../services/imageCache'
 
 export function useRadarData() {
   const setLatestRecord = useStore((s) => s.setLatestRecord)
@@ -111,5 +111,78 @@ export function useRadarData() {
     [setIsLoading, setRadarFrames, setFrames, setCurrentFrameIndex, setPreloadProgress, addToast]
   )
 
-  return { loadLatest, loadAnimationData }
+  const refreshAnimationFrames = useCallback(
+    async (hoursBack) => {
+      const radarIds = Object.keys(RADARS)
+      const now = new Date()
+
+      try {
+        const allRadarRecords = {}
+        const timestampSet = new Set()
+
+        const results = await Promise.allSettled(
+          radarIds.map((id) => fetchRecordsForPeriod(id, now, hoursBack))
+        )
+
+        results.forEach((result, i) => {
+          if (result.status === 'fulfilled') {
+            allRadarRecords[radarIds[i]] = result.value
+            result.value.forEach((r) => timestampSet.add(r.timestamp.getTime()))
+          } else {
+            allRadarRecords[radarIds[i]] = []
+          }
+        })
+
+        const newTimestamps = Array.from(timestampSet)
+          .sort((a, b) => a - b)
+          .map((t) => new Date(t))
+
+        if (newTimestamps.length === 0) return
+
+        // Compare with existing timeline — skip update if identical
+        const { frames: oldFrames, currentFrameIndex, radarFrames: oldRadarFrames } = useStore.getState()
+        const oldKeys = oldFrames.map((t) => t.getTime()).join(',')
+        const newKeys = newTimestamps.map((t) => t.getTime()).join(',')
+        if (oldKeys === newKeys) return
+
+        // Preserve the timestamp the user is currently viewing
+        const currentTimestamp = oldFrames[currentFrameIndex]?.getTime()
+
+        // Update store
+        setRadarFrames(allRadarRecords)
+        setFrames(newTimestamps)
+
+        // Find closest index to the previously displayed timestamp
+        if (currentTimestamp != null) {
+          let bestIdx = 0
+          let bestDiff = Infinity
+          newTimestamps.forEach((t, i) => {
+            const diff = Math.abs(t.getTime() - currentTimestamp)
+            if (diff < bestDiff) { bestDiff = diff; bestIdx = i }
+          })
+          setCurrentFrameIndex(bestIdx)
+        }
+
+        // Preload only new images (ones not already cached)
+        const oldUrlSet = new Set(
+          radarIds.flatMap((id) => getAllImageUrls(oldRadarFrames[id] || []))
+        )
+        const newUrls = radarIds
+          .flatMap((id) => getAllImageUrls(allRadarRecords[id] || []))
+          .filter((url) => !oldUrlSet.has(url))
+
+        if (newUrls.length > 0) {
+          // Background preload — no abort of existing loads, no progress overlay
+          await preloadBatch(newUrls)
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          addToast('Error al actualizar frames: ' + err.message, 'error')
+        }
+      }
+    },
+    [setRadarFrames, setFrames, setCurrentFrameIndex, addToast]
+  )
+
+  return { loadLatest, loadAnimationData, refreshAnimationFrames }
 }

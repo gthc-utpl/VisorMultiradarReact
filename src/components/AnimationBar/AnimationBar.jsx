@@ -78,7 +78,7 @@ export default function AnimationBar() {
     nextFrame, prevFrame, goToFirst, goToLast, togglePlay,
     totalFrames, isPlaying,
   } = useAnimation()
-  const { loadAnimationData } = useRadarData()
+  const { loadAnimationData, refreshAnimationFrames } = useRadarData()
 
   const loadData = useCallback((endDate) => {
     setDateStatus(null)
@@ -90,6 +90,21 @@ export default function AnimationBar() {
   useEffect(() => {
     if (animationActive) loadData()
   }, [animationActive, period])
+
+  // Auto-refresh frames during live-mode animation
+  const isLiveMode = customDate === ''
+  useEffect(() => {
+    if (!animationActive || !isLiveMode) return
+
+    const tick = () => {
+      if (!document.hidden) {
+        refreshAnimationFrames(period)
+      }
+    }
+
+    const id = setInterval(tick, ANIMATION_CONFIG.autoRefreshInterval)
+    return () => clearInterval(id)
+  }, [animationActive, isLiveMode, period, refreshAnimationFrames])
 
   const handleApplyCustomDate = useCallback(() => {
     if (!customDate) {
