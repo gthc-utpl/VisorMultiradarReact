@@ -66,6 +66,7 @@ export default function AnimationBar() {
   const setPeriod = useStore((s) => s.setPeriod)
   const speed = useStore((s) => s.speed)
   const setSpeed = useStore((s) => s.setSpeed)
+  const setIsPlaying = useStore((s) => s.setIsPlaying)
   const customDate = useStore((s) => s.customDate)
   const setCustomDate = useStore((s) => s.setCustomDate)
   const frameData = useCurrentFrame()
@@ -74,6 +75,7 @@ export default function AnimationBar() {
   const [mobileExpanded, setMobileExpanded] = useState(false)
   const barRef = useRef(null)
   const endDateRef = useRef(null)
+  const hasAutoPlayed = useRef(false)
 
   const {
     nextFrame, prevFrame, goToFirst, goToLast, togglePlay,
@@ -90,7 +92,16 @@ export default function AnimationBar() {
 
   useEffect(() => {
     if (animationActive) loadData()
+    else hasAutoPlayed.current = false
   }, [animationActive, period])
+
+  // Auto-play on first load after activation
+  useEffect(() => {
+    if (animationActive && !isLoading && totalFrames > 0 && !hasAutoPlayed.current) {
+      hasAutoPlayed.current = true
+      setIsPlaying(true)
+    }
+  }, [animationActive, isLoading, totalFrames, setIsPlaying])
 
   // Auto-refresh frames during live-mode animation
   const isLiveMode = !customDate
